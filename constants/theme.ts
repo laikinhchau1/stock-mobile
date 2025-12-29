@@ -1,53 +1,113 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import { Platform } from 'react-native';
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-
+// Stock Investment App Theme
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    // Core
+    primary: '#00C853',
+    primaryDark: '#00A844',
+    danger: '#FF5252',
+    dangerDark: '#E04545',
+    warning: '#FFB74D',
+    info: '#58A6FF',
+
+    // Background
+    background: '#FFFFFF',
+    surface: '#F5F5F5',
+    surfaceElevated: '#FFFFFF',
+
+    // Text
+    text: '#1A1A1A',
+    textSecondary: '#666666',
+    textTertiary: '#999999',
+    textInverse: '#FFFFFF',
+
+    // UI
+    border: '#E0E0E0',
+    divider: '#EEEEEE',
+    tint: '#00C853',
+    tabIconDefault: '#999999',
+
+    // Semantic
+    profit: '#00C853',
+    loss: '#FF5252',
+    neutral: '#666666',
+
+    // Chart
+    chartUp: '#00C853',
+    chartDown: '#FF5252',
+    chartLine: '#58A6FF',
+    chartGrid: '#E0E0E0',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    // Core
+    primary: '#00E676',
+    primaryDark: '#00C853',
+    danger: '#FF6B6B',
+    dangerDark: '#FF5252',
+    warning: '#FFCA28',
+    info: '#64B5F6',
+
+    // Background
+    background: '#0D1117',
+    surface: '#161B22',
+    surfaceElevated: '#1C2128',
+
+    // Text
+    text: '#FFFFFF',
+    textSecondary: '#8B949E',
+    textTertiary: '#6E7681',
+    textInverse: '#0D1117',
+
+    // UI
+    border: '#30363D',
+    divider: '#21262D',
+    tint: '#00E676',
+    tabIconDefault: '#6E7681',
+
+    // Semantic
+    profit: '#00E676',
+    loss: '#FF6B6B',
+    neutral: '#8B949E',
+
+    // Chart
+    chartUp: '#00E676',
+    chartDown: '#FF6B6B',
+    chartLine: '#64B5F6',
+    chartGrid: '#30363D',
   },
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+};
+
+export const BorderRadius = {
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  full: 9999,
+};
+
+export const FontSize = {
+  xs: 10,
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+};
+
+export const FontWeight = {
+  regular: '400' as const,
+  medium: '500' as const,
+  semibold: '600' as const,
+  bold: '700' as const,
+};
+
+export type ThemeColors = typeof Colors.light;

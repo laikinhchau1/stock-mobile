@@ -9,6 +9,7 @@ export default function CommunityLayout() {
     return (
         <Stack
             screenOptions={{
+                headerShown: true,
                 headerStyle: {
                     backgroundColor: colors.background,
                 },
@@ -19,8 +20,7 @@ export default function CommunityLayout() {
             <Stack.Screen
                 name="[postId]"
                 options={{
-                    title: 'Chi tiết bài viết',
-                    headerBackTitle: 'Quay lại',
+                    headerShown: false,
                 }}
             />
             <Stack.Screen
@@ -41,3 +41,4 @@ export default function CommunityLayout() {
         </Stack>
     );
 }
+

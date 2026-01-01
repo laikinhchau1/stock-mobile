@@ -65,12 +65,12 @@ export function PostCard({ post, onLike, onShare }: PostCardProps) {
                     <View style={styles.authorInfo}>
                         <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
                             <Text style={[styles.avatarText, { color: colors.textInverse }]}>
-                                {post.author.name.charAt(0).toUpperCase()}
+                                {(post.author?.name ?? 'U').charAt(0).toUpperCase()}
                             </Text>
                         </View>
                         <View>
                             <Text style={[styles.authorName, { color: colors.text }]}>
-                                {post.author.name}
+                                {post.author?.name ?? 'Ẩn danh'}
                             </Text>
                             <Text style={[styles.postTime, { color: colors.textTertiary }]}>
                                 {formatTime(post.createdAt)}

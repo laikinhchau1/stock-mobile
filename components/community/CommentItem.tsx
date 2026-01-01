@@ -28,17 +28,19 @@ export function CommentItem({ comment, onLike, onReply }: CommentItemProps) {
     const colorScheme = useColorScheme() ?? 'dark';
     const colors = Colors[colorScheme];
 
+    const authorName = comment.author?.name ?? 'Ẩn danh';
+
     return (
         <View style={[styles.container, { borderBottomColor: colors.divider }]}>
             <View style={styles.header}>
                 <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
                     <Text style={[styles.avatarText, { color: colors.textInverse }]}>
-                        {comment.author.name.charAt(0).toUpperCase()}
+                        {authorName.charAt(0).toUpperCase()}
                     </Text>
                 </View>
                 <View style={styles.headerInfo}>
                     <Text style={[styles.authorName, { color: colors.text }]}>
-                        {comment.author.name}
+                        {authorName}
                     </Text>
                     <Text style={[styles.time, { color: colors.textTertiary }]}>
                         {formatTime(comment.createdAt)}

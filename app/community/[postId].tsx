@@ -9,7 +9,7 @@ import {
     TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, BorderRadius, FontSize, FontWeight } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCommunityStore } from '@/stores/community-store';
@@ -44,6 +44,7 @@ export default function PostDetailScreen() {
     const { postId } = useLocalSearchParams<{ postId: string }>();
     const colorScheme = useColorScheme() ?? 'dark';
     const colors = Colors[colorScheme];
+    const router = useRouter();
 
     const { isAuthenticated } = useAuthStore();
     const {
@@ -93,6 +94,13 @@ export default function PostDetailScreen() {
     if (error || !currentPost) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+                {/* Header */}
+                <View style={[styles.header, { borderBottomColor: colors.divider }]}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <IconSymbol name="chevron.left" size={24} color={colors.text} />
+                        <Text style={[styles.backText, { color: colors.text }]}>Quay lại</Text>
+                    </TouchableOpacity>
+                </View>
                 <View style={styles.errorContainer}>
                     <IconSymbol name="exclamationmark.triangle" size={48} color={colors.danger} />
                     <Text style={[styles.errorText, { color: colors.text }]}>
@@ -107,28 +115,29 @@ export default function PostDetailScreen() {
     const categoryColor = colors[categoryConfig.colorKey];
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
-            <Stack.Screen
-                options={{
-                    headerRight: () => (
-                        <TouchableOpacity onPress={handleShare}>
-                            <IconSymbol name="square.and.arrow.up" size={22} color={colors.primary} />
-                        </TouchableOpacity>
-                    ),
-                }}
-            />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* Header */}
+            <View style={[styles.header, { borderBottomColor: colors.divider }]}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <IconSymbol name="chevron.left" size={24} color={colors.text} />
+                    <Text style={[styles.backText, { color: colors.text }]}>Quay lại</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+                    <IconSymbol name="square.and.arrow.up" size={22} color={colors.primary} />
+                </TouchableOpacity>
+            </View>
 
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 {/* Author Info */}
                 <View style={styles.authorSection}>
                     <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
                         <Text style={[styles.avatarText, { color: colors.textInverse }]}>
-                            {currentPost.author.name.charAt(0).toUpperCase()}
+                            {(currentPost.author?.name ?? 'Ẩn danh').charAt(0).toUpperCase()}
                         </Text>
                     </View>
                     <View style={styles.authorInfo}>
                         <Text style={[styles.authorName, { color: colors.text }]}>
-                            {currentPost.author.name}
+                            {currentPost.author?.name ?? 'Ẩn danh'}
                         </Text>
                         <Text style={[styles.postDate, { color: colors.textTertiary }]}>
                             {formatDate(currentPost.createdAt)}
@@ -232,6 +241,25 @@ export default function PostDetailScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.md,
+        borderBottomWidth: 1,
+    },
+    backButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    backText: {
+        fontSize: FontSize.md,
+        marginLeft: Spacing.xs,
+    },
+    shareButton: {
+        padding: Spacing.xs,
     },
     loadingContainer: {
         flex: 1,

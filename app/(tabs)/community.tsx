@@ -36,6 +36,7 @@ export default function CommunityScreen() {
     const {
         posts,
         isLoading,
+        isRefreshing,
         isLoadingMore,
         hasMore,
         activeCategory,
@@ -50,7 +51,7 @@ export default function CommunityScreen() {
     }, []);
 
     const handleRefresh = useCallback(() => {
-        fetchPosts(true);
+        fetchPosts(true, true);
     }, []);
 
     const handleLoadMore = useCallback(() => {
@@ -182,7 +183,7 @@ export default function CommunityScreen() {
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
-                        refreshing={isLoading}
+                        refreshing={isRefreshing}
                         onRefresh={handleRefresh}
                         tintColor={colors.primary}
                     />

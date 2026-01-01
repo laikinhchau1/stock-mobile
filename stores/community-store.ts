@@ -18,6 +18,7 @@ interface CommunityState {
 
     // Loading states
     isLoading: boolean;
+    isRefreshing: boolean;
     isLoadingMore: boolean;
     isLoadingPost: boolean;
     isSubmitting: boolean;
@@ -26,7 +27,7 @@ interface CommunityState {
     error: string | null;
 
     // Actions
-    fetchPosts: (reset?: boolean) => Promise<void>;
+    fetchPosts: (reset?: boolean, isRefresh?: boolean) => Promise<void>;
     fetchMorePosts: () => Promise<void>;
     fetchPostById: (id: string) => Promise<void>;
     fetchMyPosts: () => Promise<void>;
@@ -50,6 +51,7 @@ const initialState = {
     activeCategory: null,
     searchQuery: '',
     isLoading: false,
+    isRefreshing: false,
     isLoadingMore: false,
     isLoadingPost: false,
     isSubmitting: false,
@@ -59,11 +61,16 @@ const initialState = {
 export const useCommunityStore = create<CommunityState>((set, get) => ({
     ...initialState,
 
-    fetchPosts: async (reset = true) => {
+    fetchPosts: async (reset = true, isRefresh = false) => {
         const { activeCategory, searchQuery, page } = get();
 
         if (reset) {
-            set({ isLoading: true, error: null, page: 1 });
+            set({
+                isLoading: true,
+                isRefreshing: isRefresh,
+                error: null,
+                page: 1
+            });
         }
 
         try {
@@ -80,11 +87,13 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
                 totalPages: response.meta.totalPages,
                 hasMore: response.meta.page < response.meta.totalPages,
                 isLoading: false,
+                isRefreshing: false,
             });
         } catch (error: any) {
             set({
                 error: error.message || 'Failed to fetch posts',
                 isLoading: false,
+                isRefreshing: false,
             });
         }
     },

@@ -5,13 +5,16 @@ import {
     ScrollView,
     StyleSheet,
     TouchableOpacity,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuthStore } from '@/stores/auth-store';
 
 const menuItems = [
     {
@@ -46,25 +49,117 @@ const menuItems = [
 export default function AccountScreen() {
     const colorScheme = useColorScheme() ?? 'dark';
     const colors = Colors[colorScheme];
+    const { user, isAuthenticated, logout } = useAuthStore();
 
+    const handleLogout = () => {
+        Alert.alert(
+            'Đăng xuất',
+            'Bạn có chắc chắn muốn đăng xuất?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Đăng xuất',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await logout();
+                    },
+                },
+            ]
+        );
+    };
+
+    // Guest view - not logged in
+    if (!isAuthenticated || !user) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    {/* Guest Header */}
+                    <View style={styles.guestHeader}>
+                        <View style={[styles.guestAvatar, { backgroundColor: colors.surface }]}>
+                            <IconSymbol name="person.crop.circle" size={48} color={colors.textTertiary} />
+                        </View>
+                        <Text style={[styles.guestTitle, { color: colors.text }]}>
+                            Chào mừng bạn!
+                        </Text>
+                        <Text style={[styles.guestSubtitle, { color: colors.textSecondary }]}>
+                            Đăng nhập để trải nghiệm đầy đủ tính năng
+                        </Text>
+                        <View style={styles.guestButtons}>
+                            <Button
+                                title="Đăng nhập"
+                                onPress={() => router.push('/auth/login')}
+                                fullWidth
+                            />
+                            <Button
+                                title="Tạo tài khoản"
+                                onPress={() => router.push('/auth/register')}
+                                variant="outline"
+                                fullWidth
+                                style={{ marginTop: Spacing.sm }}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Settings Menu - available for guests */}
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                            Cài đặt
+                        </Text>
+                        <Card padding="none">
+                            {menuItems[2].items.map((item, index) => (
+                                <TouchableOpacity
+                                    key={item.label}
+                                    style={[
+                                        styles.menuItem,
+                                        index < menuItems[2].items.length - 1 && {
+                                            borderBottomWidth: 1,
+                                            borderBottomColor: colors.divider,
+                                        },
+                                    ]}
+                                    onPress={() => router.push(item.route as any)}
+                                >
+                                    <View style={styles.menuItemLeft}>
+                                        <View style={[styles.menuIcon, { backgroundColor: `${colors.primary}15` }]}>
+                                            <IconSymbol name={item.icon as any} size={18} color={colors.primary} />
+                                        </View>
+                                        <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+                                    </View>
+                                    <IconSymbol name="chevron.right" size={16} color={colors.textTertiary} />
+                                </TouchableOpacity>
+                            ))}
+                        </Card>
+                    </View>
+
+                    <Text style={[styles.version, { color: colors.textTertiary }]}>
+                        Phiên bản 1.0.0
+                    </Text>
+                </ScrollView>
+            </SafeAreaView>
+        );
+    }
+
+    // Logged in view
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
-                <View style={styles.header}>
+                <TouchableOpacity
+                    style={styles.header}
+                    onPress={() => router.push('/profile')}
+                >
                     <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                        <Text style={[styles.avatarText, { color: colors.textInverse }]}>NĐT</Text>
-                    </View>
-                    <View style={styles.userInfo}>
-                        <Text style={[styles.userName, { color: colors.text }]}>Nhà Đầu Tư</Text>
-                        <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
-                            investor@example.com
+                        <Text style={[styles.avatarText, { color: colors.textInverse }]}>
+                            {user.name.charAt(0).toUpperCase()}
                         </Text>
                     </View>
-                    <TouchableOpacity>
-                        <IconSymbol name="chevron.right" size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
-                </View>
+                    <View style={styles.userInfo}>
+                        <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
+                        <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
+                            {user.email}
+                        </Text>
+                    </View>
+                    <IconSymbol name="chevron.right" size={20} color={colors.textTertiary} />
+                </TouchableOpacity>
 
                 {/* Premium Card */}
                 <View style={styles.section}>
@@ -119,6 +214,7 @@ export default function AccountScreen() {
                 <View style={styles.section}>
                     <TouchableOpacity
                         style={[styles.logoutButton, { backgroundColor: colors.surface }]}
+                        onPress={handleLogout}
                     >
                         <IconSymbol name="rectangle.portrait.and.arrow.right" size={18} color={colors.danger} />
                         <Text style={[styles.logoutText, { color: colors.danger }]}>Đăng xuất</Text>
@@ -163,6 +259,32 @@ const styles = StyleSheet.create({
     },
     userEmail: {
         fontSize: FontSize.sm,
+    },
+    guestHeader: {
+        alignItems: 'center',
+        padding: Spacing.xl,
+        paddingTop: Spacing.xxl,
+    },
+    guestAvatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: Spacing.lg,
+    },
+    guestTitle: {
+        fontSize: FontSize.xl,
+        fontWeight: FontWeight.bold,
+        marginBottom: Spacing.xs,
+    },
+    guestSubtitle: {
+        fontSize: FontSize.md,
+        textAlign: 'center',
+        marginBottom: Spacing.lg,
+    },
+    guestButtons: {
+        width: '100%',
     },
     section: {
         paddingHorizontal: Spacing.lg,

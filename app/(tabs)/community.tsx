@@ -1,218 +1,195 @@
-import React, { useState } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
     View,
     Text,
-    ScrollView,
+    FlatList,
     StyleSheet,
     RefreshControl,
     TouchableOpacity,
-    Image,
+    ActivityIndicator,
+    Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Card } from '@/components/ui/card';
+import { useCommunityStore } from '@/stores/community-store';
+import { useAuthStore } from '@/stores/auth-store';
+import { PostCard } from '@/components/community';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Post, PostCategory } from '@/services/community';
 
-// Mock data
-const mockPosts = [
-    {
-        id: '1',
-        title: 'Phân tích kỹ thuật VNM - Cơ hội mua vào?',
-        summary: 'VNM đang trong xu hướng tăng với RSI ở vùng trung tính. Hỗ trợ mạnh tại 72,000...',
-        author: 'Nguyễn Văn A',
-        authorAvatar: null,
-        category: 'ANALYSIS',
-        likes: 42,
-        comments: 15,
-        createdAt: '2h trước',
-        symbols: ['VNM'],
-    },
-    {
-        id: '2',
-        title: 'Tin nóng: FED giữ nguyên lãi suất',
-        summary: 'Cục Dự trữ Liên bang Mỹ quyết định giữ nguyên lãi suất trong cuộc họp tháng 12...',
-        author: 'Thị Trường',
-        authorAvatar: null,
-        category: 'NEWS',
-        likes: 128,
-        comments: 45,
-        createdAt: '4h trước',
-        symbols: [],
-    },
-    {
-        id: '3',
-        title: 'Chiến lược đầu tư cho năm 2025',
-        summary: 'Năm 2025 được dự báo sẽ là năm nhiều biến động. Cùng phân tích các ngành tiềm năng...',
-        author: 'Chuyên gia CK',
-        authorAvatar: null,
-        category: 'STRATEGY',
-        likes: 256,
-        comments: 78,
-        createdAt: '1 ngày trước',
-        symbols: ['VNM', 'FPT', 'VCB'],
-    },
+const tabs: { key: PostCategory | null; label: string }[] = [
+    { key: null, label: 'Tất cả' },
+    { key: PostCategory.ANALYSIS, label: 'Phân tích' },
+    { key: PostCategory.NEWS, label: 'Tin tức' },
+    { key: PostCategory.DISCUSSION, label: 'Thảo luận' },
+    { key: PostCategory.EDUCATION, label: 'Học tập' },
 ];
-
-const tabs = ['Tất cả', 'Phân tích', 'Tin tức', 'Thảo luận', 'Học tập'];
 
 export default function CommunityScreen() {
     const colorScheme = useColorScheme() ?? 'dark';
     const colors = Colors[colorScheme];
-    const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState('Tất cả');
+    const router = useRouter();
 
-    const onRefresh = async () => {
-        setRefreshing(true);
-        setTimeout(() => setRefreshing(false), 1000);
-    };
+    const { isAuthenticated } = useAuthStore();
+    const {
+        posts,
+        isLoading,
+        isLoadingMore,
+        hasMore,
+        activeCategory,
+        fetchPosts,
+        fetchMorePosts,
+        setCategory,
+        likePost,
+    } = useCommunityStore();
 
-    const getCategoryColor = (category: string) => {
-        switch (category) {
-            case 'ANALYSIS':
-                return colors.info;
-            case 'NEWS':
-                return colors.warning;
-            case 'STRATEGY':
-                return colors.primary;
-            default:
-                return colors.textSecondary;
+    useEffect(() => {
+        fetchPosts(true);
+    }, []);
+
+    const handleRefresh = useCallback(() => {
+        fetchPosts(true);
+    }, []);
+
+    const handleLoadMore = useCallback(() => {
+        if (hasMore && !isLoadingMore) {
+            fetchMorePosts();
+        }
+    }, [hasMore, isLoadingMore]);
+
+    const handleShare = async (post: Post) => {
+        try {
+            await Share.share({
+                title: post.title,
+                message: `${post.title}\n\n${post.summary || post.content.substring(0, 200)}...`,
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
         }
     };
 
-    const getCategoryLabel = (category: string) => {
-        switch (category) {
-            case 'ANALYSIS':
-                return 'Phân tích';
-            case 'NEWS':
-                return 'Tin tức';
-            case 'STRATEGY':
-                return 'Chiến lược';
-            default:
-                return category;
-        }
+    const handleCreatePost = () => {
+        router.push('/community/create');
     };
 
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    const renderPost = ({ item }: { item: Post }) => (
+        <PostCard
+            post={item}
+            onLike={likePost}
+            onShare={handleShare}
+        />
+    );
+
+    const renderHeader = () => (
+        <>
             {/* Header */}
             <View style={styles.header}>
                 <Text style={[styles.title, { color: colors.text }]}>Cộng đồng</Text>
-                <TouchableOpacity style={[styles.writeButton, { backgroundColor: colors.primary }]}>
-                    <IconSymbol name="square.and.pencil" size={20} color={colors.textInverse} />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    {isAuthenticated && (
+                        <TouchableOpacity
+                            style={styles.headerButton}
+                            onPress={() => router.push('/community/my-posts')}
+                        >
+                            <IconSymbol name="person.crop.circle" size={22} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                        style={[styles.writeButton, { backgroundColor: colors.primary }]}
+                        onPress={handleCreatePost}
+                    >
+                        <IconSymbol name="square.and.pencil" size={20} color={colors.textInverse} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Tabs */}
             <View style={styles.tabsContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {tabs.map((tab) => (
+                <FlatList
+                    horizontal
+                    data={tabs}
+                    keyExtractor={(item) => item.label}
+                    showsHorizontalScrollIndicator={false}
+                    renderItem={({ item }) => (
                         <TouchableOpacity
-                            key={tab}
                             style={[
                                 styles.tab,
                                 {
-                                    backgroundColor: activeTab === tab ? colors.primary : colors.surface,
+                                    backgroundColor:
+                                        activeCategory === item.key ? colors.primary : colors.surface,
                                 },
                             ]}
-                            onPress={() => setActiveTab(tab)}
+                            onPress={() => setCategory(item.key)}
                         >
                             <Text
                                 style={[
                                     styles.tabText,
                                     {
-                                        color: activeTab === tab ? colors.textInverse : colors.textSecondary,
+                                        color:
+                                            activeCategory === item.key
+                                                ? colors.textInverse
+                                                : colors.textSecondary,
                                     },
                                 ]}
                             >
-                                {tab}
+                                {item.label}
                             </Text>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                    )}
+                />
             </View>
+        </>
+    );
 
-            {/* Posts */}
-            <ScrollView
-                style={styles.postList}
+    const renderEmpty = () => {
+        if (isLoading) return null;
+
+        return (
+            <View style={styles.emptyContainer}>
+                <IconSymbol name="doc.text" size={48} color={colors.textTertiary} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                    Chưa có bài viết
+                </Text>
+                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
+                    Hãy là người đầu tiên chia sẻ với cộng đồng
+                </Text>
+            </View>
+        );
+    };
+
+    const renderFooter = () => {
+        if (!isLoadingMore) return null;
+
+        return (
+            <View style={styles.footer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+        );
+    };
+
+    return (
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <FlatList
+                data={posts}
+                renderItem={renderPost}
+                keyExtractor={(item) => item.id}
+                ListHeaderComponent={renderHeader}
+                ListEmptyComponent={renderEmpty}
+                ListFooterComponent={renderFooter}
+                contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    <RefreshControl
+                        refreshing={isLoading}
+                        onRefresh={handleRefresh}
+                        tintColor={colors.primary}
+                    />
                 }
-            >
-                {mockPosts.map((post) => (
-                    <Card key={post.id} style={styles.postCard}>
-                        <View style={styles.postHeader}>
-                            <View style={styles.authorInfo}>
-                                <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                                    <Text style={[styles.avatarText, { color: colors.textInverse }]}>
-                                        {post.author.charAt(0)}
-                                    </Text>
-                                </View>
-                                <View>
-                                    <Text style={[styles.authorName, { color: colors.text }]}>{post.author}</Text>
-                                    <Text style={[styles.postTime, { color: colors.textTertiary }]}>
-                                        {post.createdAt}
-                                    </Text>
-                                </View>
-                            </View>
-                            <View
-                                style={[
-                                    styles.categoryBadge,
-                                    { backgroundColor: `${getCategoryColor(post.category)}20` },
-                                ]}
-                            >
-                                <Text
-                                    style={[styles.categoryText, { color: getCategoryColor(post.category) }]}
-                                >
-                                    {getCategoryLabel(post.category)}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <Text style={[styles.postTitle, { color: colors.text }]}>{post.title}</Text>
-                        <Text
-                            style={[styles.postSummary, { color: colors.textSecondary }]}
-                            numberOfLines={2}
-                        >
-                            {post.summary}
-                        </Text>
-
-                        {post.symbols.length > 0 && (
-                            <View style={styles.symbolTags}>
-                                {post.symbols.map((symbol) => (
-                                    <View
-                                        key={symbol}
-                                        style={[styles.symbolTag, { backgroundColor: colors.surface }]}
-                                    >
-                                        <Text style={[styles.symbolText, { color: colors.primary }]}>
-                                            ${symbol}
-                                        </Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-
-                        <View style={[styles.postFooter, { borderTopColor: colors.divider }]}>
-                            <TouchableOpacity style={styles.footerAction}>
-                                <IconSymbol name="heart" size={18} color={colors.textSecondary} />
-                                <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-                                    {post.likes}
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.footerAction}>
-                                <IconSymbol name="bubble.left" size={18} color={colors.textSecondary} />
-                                <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-                                    {post.comments}
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.footerAction}>
-                                <IconSymbol name="square.and.arrow.up" size={18} color={colors.textSecondary} />
-                            </TouchableOpacity>
-                        </View>
-                    </Card>
-                ))}
-            </ScrollView>
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.3}
+            />
         </SafeAreaView>
     );
 }
@@ -225,11 +202,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: Spacing.lg,
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.md,
     },
     title: {
         fontSize: FontSize.xxl,
         fontWeight: FontWeight.bold,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    headerButton: {
+        padding: Spacing.sm,
+        marginRight: Spacing.sm,
     },
     writeButton: {
         padding: Spacing.sm,
@@ -249,88 +236,26 @@ const styles = StyleSheet.create({
         fontSize: FontSize.sm,
         fontWeight: FontWeight.medium,
     },
-    postList: {
-        flex: 1,
+    listContent: {
         paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.xxl,
     },
-    postCard: {
-        marginBottom: Spacing.md,
-    },
-    postHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    emptyContainer: {
         alignItems: 'center',
-        marginBottom: Spacing.md,
+        paddingVertical: Spacing.xxl * 2,
     },
-    authorInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    avatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: Spacing.sm,
-    },
-    avatarText: {
-        fontSize: FontSize.md,
-        fontWeight: FontWeight.bold,
-    },
-    authorName: {
-        fontSize: FontSize.sm,
-        fontWeight: FontWeight.medium,
-    },
-    postTime: {
-        fontSize: FontSize.xs,
-    },
-    categoryBadge: {
-        paddingHorizontal: Spacing.sm,
-        paddingVertical: 2,
-        borderRadius: BorderRadius.sm,
-    },
-    categoryText: {
-        fontSize: FontSize.xs,
-        fontWeight: FontWeight.medium,
-    },
-    postTitle: {
+    emptyTitle: {
         fontSize: FontSize.lg,
         fontWeight: FontWeight.semibold,
-        marginBottom: Spacing.xs,
-    },
-    postSummary: {
-        fontSize: FontSize.sm,
-        lineHeight: 20,
-    },
-    symbolTags: {
-        flexDirection: 'row',
-        marginTop: Spacing.sm,
-        flexWrap: 'wrap',
-    },
-    symbolTag: {
-        paddingHorizontal: Spacing.sm,
-        paddingVertical: 2,
-        borderRadius: BorderRadius.sm,
-        marginRight: Spacing.xs,
-    },
-    symbolText: {
-        fontSize: FontSize.xs,
-        fontWeight: FontWeight.medium,
-    },
-    postFooter: {
-        flexDirection: 'row',
         marginTop: Spacing.md,
-        paddingTop: Spacing.md,
-        borderTopWidth: 1,
     },
-    footerAction: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: Spacing.xl,
-    },
-    footerText: {
+    emptyDescription: {
         fontSize: FontSize.sm,
-        marginLeft: Spacing.xs,
+        marginTop: Spacing.xs,
+        textAlign: 'center',
+    },
+    footer: {
+        paddingVertical: Spacing.lg,
+        alignItems: 'center',
     },
 });
